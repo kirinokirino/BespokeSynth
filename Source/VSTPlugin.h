@@ -169,7 +169,7 @@ private:
    std::vector<ChannelModulations> mChannelModulations;
 
    ofMutex mVSTMutex;
-   VSTPlayhead mPlayhead;
+   VSTPlayhead *mPlayhead;
 
    //NSWindowOverlay* mWindowOverlay{ nullptr };
 

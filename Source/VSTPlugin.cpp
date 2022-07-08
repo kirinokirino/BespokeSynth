@@ -343,7 +343,7 @@ void VSTPlugin::LoadVST(juce::PluginDescription desc)
       mPlugin->setBusesLayout(layouts);
 
       mPlugin->prepareToPlay(gSampleRate, gBufferSize);
-      mPlugin->setPlayHead(&mPlayhead);
+      mPlugin->setPlayHead(mPlayhead);
       mNumInputs = mPlugin->getTotalNumInputChannels();
       mNumOutputs = mPlugin->getTotalNumOutputChannels();
       ofLog() << "vst channel - inputs: " << mNumInputs << " x outputs: " << mNumOutputs;

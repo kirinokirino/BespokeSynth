@@ -43,6 +43,16 @@ cmake -Bignore/build -DCMAKE_BUILD_TYPE=Release
 cmake --build ignore/build --parallel 4 --config Release
 ```
 
+`git submodule` will list the dependency libs, pull the latest master JUCE.
+
+```shell
+set --export CXX_STANDARD c++2b
+set --export CC /usr/bin/clang
+set --export CXX /usr/bin/clang++
+cmake -Bignore/build -DCMAKE_BUILD_TYPE=Debug
+mold -run cmake --build ignore/build --parallel 1 --config Debug
+```
+
 This will produce a release build in `ignore/build/Source/BespokeSynth_artefacts`.
 
 There are a few useful options to the *first* cmake command which many folks choose to use.

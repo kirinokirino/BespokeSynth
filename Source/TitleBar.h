@@ -27,6 +27,8 @@
 #define __Bespoke__TitleBar__
 
 #include <iostream>
+#include <memory>
+
 #include "IDrawableModule.h"
 #include "DropdownList.h"
 #include "ClickButton.h"
