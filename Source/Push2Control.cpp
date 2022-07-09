@@ -256,8 +256,8 @@ bool Push2Control::Initialize()
 
    mPixels = new unsigned char[3 * (width * kPixelRatio) * (height * kPixelRatio)];
 
-   mFontHandle = nvgCreateFont(sVG, ofToResourcePath("frabk.ttf").c_str(), ofToResourcePath("frabk.ttf").c_str());
-   mFontHandleBold = nvgCreateFont(sVG, ofToResourcePath("frabk_m.ttf").c_str(), ofToResourcePath("frabk_m.ttf").c_str());
+   mFontHandle = nvgCreateFont(sVG, ofToResourcePath("VictorMono-Regular.ttf").c_str(), ofToResourcePath("VictorMono-Regular.ttf").c_str());
+   mFontHandleBold = nvgCreateFont(sVG, ofToResourcePath("VictorMono-Bold.ttf").c_str(), ofToResourcePath("VictorMono-Bold.ttf").c_str());
 
    const std::vector<std::string>& devices = mDevice.GetPortList(false);
    for (int i = 0; i < devices.size(); ++i)

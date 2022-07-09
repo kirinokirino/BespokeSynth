@@ -339,6 +339,8 @@ public:
 #endif
       -100, 100, 5, UserPrefCategory::Graphics
    };
+   
+   UserPrefFloat module_title_bar_height { "module_title_bar_height", 12, 12, 48, UserPrefCategory::Graphics };
 
    UserPrefString recordings_path{ "recordings_path", "recordings/", 70, UserPrefCategory::Paths };
    UserPrefString tooltips{ "tooltips", "tooltips_eng.txt", 70, UserPrefCategory::Paths };

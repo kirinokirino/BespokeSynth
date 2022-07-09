@@ -219,7 +219,7 @@ private:
    std::vector<IDrawableModule*> mChildren;
    std::vector<FloatSlider*> mFloatSliders;
    std::vector<UIGrid*> mUIGrids;
-   static const int mTitleBarHeight = 12;
+   static const int mTitleBarHeight = 24;
    std::string mTypeName;
    static const int sResizeCornerSize = 8;
    ModuleContainer* mOwningContainer;

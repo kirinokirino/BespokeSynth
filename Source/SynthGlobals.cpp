@@ -75,8 +75,8 @@ IUIControl* gHoveredUIControl = nullptr;
 IUIControl* gHotBindUIControl[10];
 float gControlTactileFeedback = 0;
 float gDrawScale = 1;
-bool gShowDevModules = false;
-float gCornerRoundness = 1;
+bool gShowDevModules = true;
+float gCornerRoundness = 0;
 
 std::random_device gRandomDevice;
 bespoke::core::Xoshiro256ss gRandom(gRandomDevice);
@@ -99,9 +99,9 @@ void SynthInit()
 
 void LoadGlobalResources()
 {
-   gFont.LoadFont(ofToResourcePath("frabk.ttf"));
-   gFontBold.LoadFont(ofToResourcePath("frabk_m.ttf"));
-   gFontFixedWidth.LoadFont(ofToResourcePath("iosevka-type-light.ttf"));
+   gFont.LoadFont(ofToResourcePath("VictorMono-Regular.ttf"));
+   gFontBold.LoadFont(ofToResourcePath("VictorMono-Bold.ttf"));
+   gFontFixedWidth.LoadFont(ofToResourcePath("VictorMono-Regular.ttf"));
    //gModuleShader.load(ofToResourcePath("shaders/module.vert"), ofToResourcePath("shaders/module.frag"));
 }
 

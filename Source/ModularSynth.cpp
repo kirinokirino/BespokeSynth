@@ -538,11 +538,11 @@ void ModularSynth::Draw(void* vg)
 
    ofTranslate(GetDrawOffset().x, GetDrawOffset().y);
 
-   if (ShouldShowGridSnap())
+   if (ShouldShowGridSnap() || 1)
    {
       ofPushStyle();
       ofSetLineWidth(.5f);
-      ofSetColor(255, 255, 255, 40);
+      ofSetColor(255, 255, 255, 20);
       float gridSnapSize = UserPrefs.grid_snap_size.Get();
       int gridLinesVertical = (int)ceil((ofGetWidth() / gDrawScale) / gridSnapSize);
       for (int i = 0; i < gridLinesVertical; ++i)

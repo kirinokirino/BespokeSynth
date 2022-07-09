@@ -176,8 +176,11 @@ bool IDrawableModule::IsWithinRect(const ofRectangle& rect)
    GetDimensions(w, h);
 
    float titleBarHeight = mTitleBarHeight;
-   if (!HasTitleBar())
-      titleBarHeight = 0;
+   if (!HasTitleBar()) {
+   	  titleBarHeight = 0;
+   } else if (UserPrefs.module_title_bar_height.Get() != 0) {
+      titleBarHeight = UserPrefs.module_title_bar_height.Get();
+   }
 
    return rect.intersects(ofRectangle(x, y - titleBarHeight, w, h + titleBarHeight));
 }
@@ -190,9 +193,12 @@ bool IDrawableModule::IsVisible()
 void IDrawableModule::DrawFrame(float w, float h, bool drawModule, float& titleBarHeight, float& highlight)
 {
    titleBarHeight = mTitleBarHeight;
-   if (!HasTitleBar())
-      titleBarHeight = 0;
-
+   if (!HasTitleBar()) {
+   	  titleBarHeight = 0;
+   } else if (UserPrefs.module_title_bar_height.Get() != 0) {
+      titleBarHeight = UserPrefs.module_title_bar_height.Get();
+   }
+    
    ofTranslate(mX, mY, 0);
 
    ofColor color = GetColor(mModuleType);
@@ -284,6 +290,7 @@ void IDrawableModule::DrawFrame(float w, float h, bool drawModule, float& titleB
    if (dimModule)
       gModuleDrawAlpha *= .2f;
 
+   float padding = 3;
    float enableToggleOffset = 0;
    if (HasTitleBar())
    {
@@ -292,29 +299,31 @@ void IDrawableModule::DrawFrame(float w, float h, bool drawModule, float& titleB
       ofFill();
       ofPushMatrix();
       ofClipWindow(0, -titleBarHeight, w, titleBarHeight, true);
-      ofRect(0, -titleBarHeight, w, titleBarHeight * 2);
+      ofRect(0, -titleBarHeight, w, titleBarHeight);
       ofPopMatrix();
-
       if (mEnabledCheckbox)
       {
-         enableToggleOffset = TitleBarHeight();
+         enableToggleOffset = titleBarHeight + padding;
+      	 mEnabledCheckbox->SetBoxSize(titleBarHeight - padding);
          mEnabledCheckbox->Draw();
       }
 
       if (IsSaveable() && !Minimized())
       {
          ofSetColor(color.r, color.g, color.b, gModuleDrawAlpha);
+         float triangle_padding = padding;
+         float triangle_width = titleBarHeight - triangle_padding * 2;
          if (TheSaveDataPanel->GetModule() == this)
          {
-            ofTriangle(w - 9, -titleBarHeight + 2,
-                       w - 9, -2,
-                       w - 2, -titleBarHeight / 2);
+            ofTriangle(w - triangle_width, -titleBarHeight + triangle_padding,
+                       w - triangle_width, -triangle_padding,
+                       w - triangle_padding, -titleBarHeight / 2);
          }
          else
          {
-            ofTriangle(w - 10, -titleBarHeight + 3,
-                       w - 2, -titleBarHeight + 3,
-                       w - 6, -2);
+            ofTriangle(w - triangle_width, -titleBarHeight + triangle_padding,
+                       w - triangle_padding, -titleBarHeight + triangle_padding,
+                       w - (triangle_width + triangle_padding) / 2, - triangle_padding);
          }
       }
       ofPopStyle();
@@ -348,7 +357,7 @@ void IDrawableModule::DrawFrame(float w, float h, bool drawModule, float& titleB
    if (HasTitleBar())
    {
       ofSetColor(color * (1 - GetBeaconAmount()) + ofColor::yellow * GetBeaconAmount(), gModuleDrawAlpha);
-      DrawTextBold(GetTitleLabel(), 5 + enableToggleOffset, 10 - titleBarHeight, 16);
+      DrawTextBold(GetTitleLabel(), MAX(padding, enableToggleOffset), - titleBarHeight * 0.25f, MAX(titleBarHeight - 4, 12));
    }
 
    bool groupSelected = !TheSynth->GetGroupSelectedModules().empty() && VectorContains(this, TheSynth->GetGroupSelectedModules());
@@ -811,10 +820,10 @@ float IDrawableModule::GetMinimizedWidth()
    if (titleLabel != mLastTitleLabel)
    {
       mLastTitleLabel = titleLabel;
-      mTitleLabelWidth = gFont.GetStringWidth(GetTitleLabel(), 16);
+      mTitleLabelWidth = gFont.GetStringWidth(GetTitleLabel(), MAX(TitleBarHeight() - 4, 12));
    }
    float width = mTitleLabelWidth;
-   width += 10; //padding
+   width += TitleBarHeight(); //padding
    if (mEnabledCheckbox)
       width += TitleBarHeight();
    return MAX(width, 50);

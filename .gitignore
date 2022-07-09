@@ -7,6 +7,8 @@ Release/Bespoke.app/*
 **/data/tmp
 **/data/youtube.wav
 
+fonts/*
+
 # Compiled Object files
 *.slo
 *.lo
