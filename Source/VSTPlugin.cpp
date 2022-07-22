@@ -400,37 +400,33 @@ void VSTPlugin::LoadVST(juce::PluginDescription desc)
    juce::String errorMessage;
    mPlugin = TheSynth->GetAudioPluginFormatManager().createPluginInstance(desc, gSampleRate, gBufferSize, errorMessage);
    if (mPlugin != nullptr)
-   {
-      mPlugin->enableAllBuses();
-      mPlugin->addListener(this);
-
-      /*
-       * For now, since Bespoke is at best stereo in stereo out,
-       * Disable all non-main input and output buses
-       */
-      mNumInputChannels = mPlugin->getTotalNumInputChannels();
-      mNumOutputChannels = mPlugin->getTotalNumOutputChannels();
-      ofLog() << "vst channel - inputs: " << mNumInputChannels << " x outputs: " << mNumOutputChannels;
-
-      auto layouts = mPlugin->getBusesLayout();
-      mNumInBuses = layouts.inputBuses.size();
-      mNumOutBuses = layouts.outputBuses.size();
-      mPlugin->enableAllBuses();
-      ofLog() << "vst layout  - inputs: " << layouts.inputBuses.size() << " x outputs: " << layouts.outputBuses.size();
-
-      mPlugin->prepareToPlay(gSampleRate, gBufferSize);
-      
-      mPlugin->setPlayHead(mPlayhead);
-      mNumInputs = mPlugin->getTotalNumInputChannels();
-      mNumOutputs = mPlugin->getTotalNumOutputChannels();
-      ofLog() << "vst channel - inputs: " << mNumInputs << " x outputs: " << mNumOutputs;
-
-      mPluginName = mPlugin->getName().toStdString();
-
-      CreateParameterSliders();
-
-      mPluginReady = true;
-   }
+      {
+         mPlugin->enableAllBuses();
+         mPlugin->addListener(this);
+   
+         /*
+          * For now, since Bespoke is at best stereo in stereo out,
+          * Disable all non-main input and output buses
+          */
+         mNumInputChannels = mPlugin->getTotalNumInputChannels();
+         mNumOutputChannels = mPlugin->getTotalNumOutputChannels();
+         ofLog() << "vst channel - inputs: " << mNumInputChannels << " x outputs: " << mNumOutputChannels;
+   
+         auto layouts = mPlugin->getBusesLayout();
+         mNumInBuses = layouts.inputBuses.size();
+         mNumOutBuses = layouts.outputBuses.size();
+         mPlugin->enableAllBuses();
+         ofLog() << "vst layout  - inputs: " << layouts.inputBuses.size() << " x outputs: " << layouts.outputBuses.size();
+   
+         mPlugin->prepareToPlay(gSampleRate, gBufferSize);
+         mPlugin->setPlayHead(mPlayhead);
+   
+         mPluginName = mPlugin->getName().toStdString();
+   
+         CreateParameterSliders();
+   
+         mPluginReady = true;
+      }
    else
    {
       TheSynth->LogEvent("error loading VST: " + errorMessage.toStdString(), kLogEventType_Error);
