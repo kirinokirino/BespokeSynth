@@ -434,6 +434,22 @@ void ModularSynth::Poll()
       }
    }
 
+   bool shiftPressed = (GetKeyModifiers() == kModifier_Shift);
+   if (shiftPressed && !mIsShiftPressed)
+   {
+      double timeBetweenPresses = gTime - mLastShiftPressTime;
+      if (timeBetweenPresses < 400)
+      {
+         ToggleQuickSpawn();
+         mLastShiftPressTime = -9999; //clear timer
+      }
+      else
+      {
+         mLastShiftPressTime = gTime;
+      }
+   }
+   mIsShiftPressed = shiftPressed;
+
    ++sFrameCount;
 }
 
@@ -942,11 +958,15 @@ void ModularSynth::KeyPressed(int key, bool isRepeat)
        IKeyboardFocusListener::GetActiveKeyboardFocus() == nullptr &&
        !isRepeat)
    {
-      if (key == OF_KEY_DOWN || key == OF_KEY_UP)
+      if (key == OF_KEY_DOWN || key == OF_KEY_UP || key == OF_KEY_LEFT || key == OF_KEY_RIGHT)
       {
          float inc;
-         if ((key == OF_KEY_DOWN && gHoveredUIControl->InvertScrollDirection() == false) ||
-             (key == OF_KEY_UP && gHoveredUIControl->InvertScrollDirection() == true))
+         if (key == OF_KEY_LEFT)
+            inc = -1;
+         else if (key == OF_KEY_RIGHT)
+            inc = 1;
+         else if ((key == OF_KEY_DOWN && gHoveredUIControl->InvertScrollDirection() == false) ||
+                  (key == OF_KEY_UP && gHoveredUIControl->InvertScrollDirection() == true))
             inc = -1;
          else
             inc = 1;
@@ -1018,6 +1038,12 @@ void ModularSynth::KeyPressed(int key, bool isRepeat)
          IUIControl::SetNewManualHover(1);
    }
 
+   if (key == OF_KEY_RETURN)
+   {
+      if (mMoveModule)
+         mMoveModule = nullptr; //drop module
+   }
+
    mZoomer.OnKeyPressed(key);
 
    if (CharacterFunctions::isDigit((char)key) && (GetKeyModifiers() & kModifier_Alt))
@@ -1073,6 +1099,13 @@ float ModularSynth::GetMouseX(ModuleContainer* context, float rawX /*= FLT_MAX*/
 float ModularSynth::GetMouseY(ModuleContainer* context, float rawY /*= FLT_MAX*/)
 {
    return ((rawY == FLT_MAX ? mMousePos.y : rawY) + UserPrefs.mouse_offset_y.Get()) / context->GetDrawScale() - context->GetDrawOffset().y;
+}
+
+void ModularSynth::SetMousePosition(ModuleContainer* context, float x, float y)
+{
+   x = (x + context->GetDrawOffset().x) * context->GetDrawScale() - UserPrefs.mouse_offset_x.Get() + mMainComponent->getScreenX();
+   y = (y + context->GetDrawOffset().y) * context->GetDrawScale() - UserPrefs.mouse_offset_y.Get() + mMainComponent->getScreenY();
+   Desktop::setMousePosition(Point<int>(x, y));
 }
 
 bool ModularSynth::IsMouseButtonHeld(int button) const
@@ -1374,6 +1407,7 @@ void ModularSynth::MousePressed(int intX, int intY, int button, const juce::Mous
 
    mMousePos.x = intX;
    mMousePos.y = intY;
+   mLastClickWasEmptySpace = false;
 
    if (button >= 0 && button < (int)mIsMouseButtonHeld.size())
       mIsMouseButtonHeld[button] = true;
@@ -1539,6 +1573,24 @@ void ModularSynth::MousePressed(int intX, int intY, int button, const juce::Mous
       {
          TheSaveDataPanel->SetModule(nullptr);
       }
+
+      if (clickedModule == nullptr)
+         mLastClickWasEmptySpace = true;
+
+      if (mQuickSpawn != nullptr && mQuickSpawn->IsShowing() && clickedModule != mQuickSpawn)
+         mQuickSpawn->SetShowing(false);
+   }
+}
+
+void ModularSynth::ToggleQuickSpawn()
+{
+   if (mQuickSpawn != nullptr && mQuickSpawn->IsShowing())
+   {
+      mQuickSpawn->SetShowing(false);
+   }
+   else
+   {
+      mQuickSpawn->ShowSpawnCategoriesPopup();
    }
 }
 
@@ -1742,6 +1794,8 @@ void ModularSynth::MouseReleased(int intX, int intY, int button, const juce::Mou
 
    mIsMousePanning = false;
 
+   bool rightButton = button == 2;
+
    if (button == 3)
       return;
 
@@ -1793,6 +1847,9 @@ void ModularSynth::MouseReleased(int intX, int intY, int button, const juce::Mou
 
    if (!mGroupSelectedModules.empty() && !mMouseMovedSignificantlySincePressed)
       mGroupSelectedModules.clear();
+
+   if (rightButton && mLastClickWasEmptySpace && !mMouseMovedSignificantlySincePressed && mQuickSpawn != nullptr)
+      mQuickSpawn->ShowSpawnCategoriesPopup();
 
    mClickStartX = INT_MAX;
    mClickStartY = INT_MAX;
@@ -2070,7 +2127,7 @@ void ModularSynth::ResetLayout()
    TitleBar* titleBar = new TitleBar();
    titleBar->SetPosition(0, 0);
    titleBar->SetName("titlebar");
-   titleBar->SetTypeName("titlebar");
+   titleBar->SetTypeName("titlebar", kModuleCategory_Other);
    titleBar->CreateUIControls();
    titleBar->SetModuleFactory(&mModuleFactory);
    titleBar->Init();
@@ -2080,7 +2137,7 @@ void ModularSynth::ResetLayout()
    {
       mMinimap = std::make_unique<Minimap>();
       mMinimap->SetName("minimap");
-      mMinimap->SetTypeName("minimap");
+      mMinimap->SetTypeName("minimap", kModuleCategory_Other);
       mMinimap->SetShouldDrawOutline(false);
       mMinimap->CreateUIControls();
       mMinimap->SetShowing(true);
@@ -2798,7 +2855,9 @@ void ModularSynth::OnConsoleInput()
       {
          ofLog() << "Creating: " << mConsoleText;
          ofVec2f grabOffset(-40, 10);
-         IDrawableModule* module = SpawnModuleOnTheFly(mConsoleText, GetMouseX(&mModuleContainer) + grabOffset.x, GetMouseY(&mModuleContainer) + grabOffset.y);
+         ModuleFactory::Spawnable spawnable;
+         spawnable.mLabel = mConsoleText;
+         IDrawableModule* module = SpawnModuleOnTheFly(spawnable, GetMouseX(&mModuleContainer) + grabOffset.x, GetMouseY(&mModuleContainer) + grabOffset.y);
          TheSynth->SetMoveModule(module, grabOffset.x, grabOffset.y, true);
       }
    }
@@ -2840,69 +2899,29 @@ void ModularSynth::DoAutosave()
    SaveState(ofToDataPath(ofGetTimestampString("savestate/autosave/autosave_%Y-%m-%d_%H-%M-%S.bsk")), true);
 }
 
-IDrawableModule* ModularSynth::SpawnModuleOnTheFly(std::string spawnCommand, float x, float y, bool addToContainer, std::string name)
+IDrawableModule* ModularSynth::SpawnModuleOnTheFly(ModuleFactory::Spawnable spawnable, float x, float y, bool addToContainer, std::string name)
 {
    if (mInitialized)
       TitleBar::sShowInitialHelpOverlay = false; //don't show initial help popup
 
-   std::vector<std::string> tokens = ofSplitString(spawnCommand, " ");
-   if (tokens.size() == 0)
-      return nullptr;
-
    if (sShouldAutosave)
       DoAutosave();
 
-   std::string moduleType = tokens[0];
+   std::string moduleType = spawnable.mLabel;
 
    moduleType = ModuleFactory::FixUpTypeName(moduleType);
 
-   std::string vstToSetUp = "";
-   if (tokens.size() > 1 && tokens[tokens.size() - 1] == ModuleFactory::kVSTSuffix)
-   {
-      moduleType = "vstplugin";
-      for (size_t i = 0; i < tokens.size() - 1; ++i)
-      {
-         vstToSetUp += tokens[i];
-         if (i != tokens.size() - 2)
-            vstToSetUp += " ";
-      }
-   }
-
-   std::string prefabToSetUp = "";
-   if (tokens.size() > 1 && tokens[tokens.size() - 1] == ModuleFactory::kPrefabSuffix)
-   {
-      moduleType = "prefab";
-      for (size_t i = 0; i < tokens.size() - 1; ++i)
-      {
-         prefabToSetUp += tokens[i];
-         if (i != tokens.size() - 2)
-            prefabToSetUp += " ";
-      }
-   }
-
-   std::string midiControllerToSetUp = "";
-   if (tokens.size() > 1 && tokens[tokens.size() - 1] == ModuleFactory::kMidiControllerSuffix)
-   {
-      moduleType = "midicontroller";
-      for (size_t i = 0; i < tokens.size() - 1; ++i)
-      {
-         midiControllerToSetUp += tokens[i];
-         if (i != tokens.size() - 2)
-            midiControllerToSetUp += " ";
-      }
-   }
-
-   std::string effectToSetUp = "";
-   if (tokens.size() > 1 && tokens[tokens.size() - 1] == ModuleFactory::kEffectChainSuffix)
-   {
+   if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::EffectChain)
       moduleType = "effectchain";
-      for (size_t i = 0; i < tokens.size() - 1; ++i)
-      {
-         effectToSetUp += tokens[i];
-         if (i != tokens.size() - 2)
-            effectToSetUp += " ";
-      }
-   }
+
+   if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::Prefab)
+      moduleType = "prefab";
+
+   if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::Plugin)
+      moduleType = "vstplugin";
+
+   if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::MidiController)
+      moduleType = "midicontroller";
 
    if (name == "")
       name = moduleType;
@@ -2912,24 +2931,11 @@ IDrawableModule* ModularSynth::SpawnModuleOnTheFly(std::string spawnCommand, flo
    std::vector<IDrawableModule*> modules = mModuleContainer.GetModules();
    dummy["name"] = GetUniqueName(name, modules);
    dummy["onthefly"] = true;
-
-   if (moduleType == "effectchain")
-   {
-      for (int i = 1; i < tokens.size(); ++i)
-      {
-         if (VectorContains(tokens[i], GetEffectFactory()->GetSpawnableEffects()))
-         {
-            ofxJSONElement effect;
-            effect["type"] = tokens[i];
-            dummy["effects"].append(effect);
-         }
-      }
-   }
-
    dummy["position"][0u] = x;
    dummy["position"][1u] = y;
 
    IDrawableModule* module = nullptr;
+
    try
    {
       ScopedMutex mutex(&mAudioThreadMutex, "CreateModule");
@@ -2940,46 +2946,46 @@ IDrawableModule* ModularSynth::SpawnModuleOnTheFly(std::string spawnCommand, flo
             mModuleContainer.AddModule(module);
          SetUpModule(module, dummy);
          module->Init();
-
-         if (vstToSetUp != "")
-         {
-            VSTPlugin* plugin = dynamic_cast<VSTPlugin*>(module);
-            if (plugin != nullptr)
-               plugin->SetVST(vstToSetUp);
-         }
       }
    }
    catch (LoadingJSONException& e)
    {
-      LogEvent("Error spawning \"" + spawnCommand + "\" on the fly", kLogEventType_Warning);
+      LogEvent("Error spawning \"" + spawnable.mLabel + "\" on the fly", kLogEventType_Warning);
    }
    catch (UnknownModuleException& e)
    {
-      LogEvent("Error spawning \"" + spawnCommand + "\" on the fly, couldn't find \"" + e.mSearchName + "\"", kLogEventType_Warning);
+      LogEvent("Error spawning \"" + spawnable.mLabel + "\" on the fly, couldn't find \"" + e.mSearchName + "\"", kLogEventType_Warning);
    }
 
-   if (prefabToSetUp != "")
+   if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::EffectChain)
+   {
+      EffectChain* effectChain = dynamic_cast<EffectChain*>(module);
+      if (effectChain != nullptr)
+         effectChain->AddEffect(spawnable.mLabel, K(onTheFly));
+   }
+
+   if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::Prefab)
    {
       Prefab* prefab = dynamic_cast<Prefab*>(module);
       if (prefab != nullptr)
-         prefab->LoadPrefab("prefabs" + GetPathSeparator() + prefabToSetUp);
+         prefab->LoadPrefab("prefabs" + GetPathSeparator() + spawnable.mLabel);
    }
 
-   if (midiControllerToSetUp != "")
+   if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::Plugin)
+   {
+      VSTPlugin* plugin = dynamic_cast<VSTPlugin*>(module);
+      if (plugin != nullptr)
+         plugin->SetVST(spawnable.mPluginDesc);
+   }
+
+   if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::MidiController)
    {
       MidiController* controller = dynamic_cast<MidiController*>(module);
       if (controller != nullptr)
       {
-         controller->GetSaveData().SetString("devicein", midiControllerToSetUp);
+         controller->GetSaveData().SetString("devicein", spawnable.mLabel);
          controller->SetUpFromSaveData();
       }
-   }
-
-   if (effectToSetUp != "")
-   {
-      EffectChain* effectChain = dynamic_cast<EffectChain*>(module);
-      if (effectChain != nullptr)
-         effectChain->AddEffect(effectToSetUp, K(onTheFly));
    }
 
    return module;

@@ -28,12 +28,14 @@
 
 #include <iostream>
 #include <memory>
-
+#include <algorithm>
 #include "IDrawableModule.h"
 #include "DropdownList.h"
 #include "ClickButton.h"
 #include "Slider.h"
+#include "VSTPlugin.h"
 #include "WindowCloseListener.h"
+#include "ModuleFactory.h"
 
 class ModuleFactory;
 class TitleBar;
@@ -44,24 +46,27 @@ class PluginListWindow;
 class SpawnList
 {
 public:
-   SpawnList(IDropdownListener* owner, SpawnListManager* listManager, int x, int y, std::string label);
-   void SetList(std::vector<std::string> spawnables, std::string overrideModuleType);
+   SpawnList(IDropdownListener* owner, int x, int y, std::string label, ModuleCategory moduleCategory, bool showDecorators);
+   void SetList(std::vector<ModuleFactory::Spawnable> spawnables);
    void OnSelection(DropdownList* list);
    void SetPosition(int x, int y);
-   void SetPositionRelativeTo(SpawnList* list);
    void Draw();
    DropdownList* GetList() { return mSpawnList; }
-   IDrawableModule* Spawn();
+   IDrawableModule* Spawn(int index);
+   std::string GetLabel() const { return mLabel; }
+   ModuleCategory GetCategory() const { return mModuleCategory; }
+   const std::vector<ModuleFactory::Spawnable>& GetElements() const { return mSpawnables; }
+   bool ShouldShowDecorators() const { return mShowDecorators; }
 
 private:
    std::string mLabel;
-   std::vector<std::string> mSpawnables;
+   std::vector<ModuleFactory::Spawnable> mSpawnables;
    int mSpawnIndex;
    DropdownList* mSpawnList;
    IDropdownListener* mOwner;
-   SpawnListManager* mListManager;
    ofVec2f mPos;
-   std::string mOverrideModuleType;
+   ModuleCategory mModuleCategory;
+   bool mShowDecorators;
 };
 
 struct SpawnListManager
@@ -70,9 +75,9 @@ struct SpawnListManager
 
    void SetModuleFactory(ModuleFactory* factory);
    void SetUpPrefabsDropdown();
-   void SetUpVstDropdown();
+   void SetUpPluginsDropdown();
 
-   std::vector<SpawnList*> GetDropdowns() { return mDropdowns; }
+   const std::vector<SpawnList*>& GetDropdowns() const { return mDropdowns; }
 
    SpawnList mInstrumentModules;
    SpawnList mNoteModules;
@@ -81,11 +86,12 @@ struct SpawnListManager
    SpawnList mModulatorModules;
    SpawnList mPulseModules;
    SpawnList mOtherModules;
-   SpawnList mVstPlugins;
+   SpawnList mPlugins;
    SpawnList mPrefabs;
 
 private:
    std::vector<SpawnList*> mDropdowns;
+   juce::PluginDescription stump{};
 };
 
 class NewPatchConfirmPopup : public IDrawableModule, public IButtonListener
@@ -127,7 +133,8 @@ public:
 
    void SetModuleFactory(ModuleFactory* factory) { mSpawnLists.SetModuleFactory(factory); }
    void ListLayouts();
-   void ManageVSTs();
+   void ManagePlugins();
+   const std::vector<SpawnList*>& GetSpawnLists() const { return mSpawnLists.GetDropdowns(); }
 
    bool IsSaveable() override { return false; }
 
