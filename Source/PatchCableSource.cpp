@@ -78,21 +78,21 @@ void PatchCableSource::SetConnectionType(ConnectionType type)
    mType = type;
 
    if (mType == kConnectionType_Note)
-      mColor = IDrawableModule::GetColor(kModuleType_Note);
+      mColor = IDrawableModule::GetColor(kModuleCategory_Note);
    else if (mType == kConnectionType_Audio)
-      mColor = IDrawableModule::GetColor(kModuleType_Audio);
+      mColor = IDrawableModule::GetColor(kModuleCategory_Audio);
    else if (mType == kConnectionType_Modulator)
-      mColor = IDrawableModule::GetColor(kModuleType_Modulator);
+      mColor = IDrawableModule::GetColor(kModuleCategory_Modulator);
    else if (mType == kConnectionType_ValueSetter)
    {
-      mColor = IDrawableModule::GetColor(kModuleType_Modulator);
+      mColor = IDrawableModule::GetColor(kModuleCategory_Modulator);
       mColor.setSaturation(mColor.getSaturation() * .6f);
       mColor.setBrightness(mColor.getBrightness() * .7f);
    }
    else if (mType == kConnectionType_Pulse)
-      mColor = IDrawableModule::GetColor(kModuleType_Pulse);
+      mColor = IDrawableModule::GetColor(kModuleCategory_Pulse);
    else
-      mColor = IDrawableModule::GetColor(kModuleType_Other);
+      mColor = IDrawableModule::GetColor(kModuleCategory_Other);
    mColor.setBrightness(mColor.getBrightness() * .8f);
 }
 
@@ -354,7 +354,7 @@ void PatchCableSource::Render()
          {
             ofPushStyle();
             ofNoFill();
-            ofSetColor(IDrawableModule::GetColor(kModuleType_Other));
+            ofSetColor(IDrawableModule::GetColor(kModuleCategory_Other));
             GridControlTarget::DrawGridIcon(mX + 7, mY - 6);
             ofPopStyle();
          }
@@ -530,7 +530,9 @@ bool PatchCableSource::TestClick(float x, float y, bool right, bool testOnly /* 
             else if (mType == kConnectionType_Audio)
             {
                ofVec2f spawnOffset(-20, 10);
-               AudioSend* send = dynamic_cast<AudioSend*>(TheSynth->SpawnModuleOnTheFly("send", x + spawnOffset.x, y + spawnOffset.y));
+               ModuleFactory::Spawnable spawnable;
+               spawnable.mLabel = "send";
+               AudioSend* send = dynamic_cast<AudioSend*>(TheSynth->SpawnModuleOnTheFly(spawnable, x + spawnOffset.x, y + spawnOffset.y));
                send->SetTarget(GetTarget());
                SetTarget(send);
                send->SetSend(1, false);
@@ -539,7 +541,9 @@ bool PatchCableSource::TestClick(float x, float y, bool right, bool testOnly /* 
             else if (mType == kConnectionType_Modulator)
             {
                ofVec2f spawnOffset(-20, 10);
-               MacroSlider* macroSlider = dynamic_cast<MacroSlider*>(TheSynth->SpawnModuleOnTheFly("macroslider", x + spawnOffset.x, y + spawnOffset.y));
+               ModuleFactory::Spawnable spawnable;
+               spawnable.mLabel = "macroslider";
+               MacroSlider* macroSlider = dynamic_cast<MacroSlider*>(TheSynth->SpawnModuleOnTheFly(spawnable, x + spawnOffset.x, y + spawnOffset.y));
                IUIControl* currentTarget = dynamic_cast<IUIControl*>(GetTarget());
                SetTarget(macroSlider->GetSlider());
                macroSlider->SetOutputTarget(0, currentTarget);
